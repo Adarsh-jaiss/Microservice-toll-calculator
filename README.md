@@ -9,3 +9,8 @@ OBU - Onboard unit that sits in the truck and that's going to send out GPS conrd
 ```
 go get github.com/gorilla/websocket
 ```
+
+# docker 
+```
+docker-compose up -d
+```

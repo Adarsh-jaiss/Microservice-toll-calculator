@@ -19,6 +19,7 @@ func genCord() float64 {
 	f := rand.Float64()
 	return n + f
 }
+
 func Location() (float64,float64){
 	return genCord(),genCord()
 }
