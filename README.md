@@ -10,7 +10,13 @@ OBU - Onboard unit that sits in the truck and that's going to send out GPS conrd
 go get github.com/gorilla/websocket
 ```
 
-# docker 
+# [Kafka](https://github.com/confluentinc/confluent-kafka-go)
+
+### Kafka Go-client
 ```
+go get github.com/confluentinc/confluent-kafka-go/v2/kafka
+```
+
+### kafka docker installation
+```bash
 docker-compose up -d
-```

@@ -1,13 +1,12 @@
 package main
 
 import (
-	"encoding/json"
+	
 	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/adarsh-jaiss/microservice-toll-calculator/types"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/gorilla/websocket"
 )
 
@@ -16,49 +15,25 @@ var KafkaTopic = "obudata"
 type DataReceiver struct {
     msgch chan types.OBUData
     conn  *websocket.Conn
-    Prod  *kafka.Producer
+    // Prod  *kafka.Producer
+	Prod DataProducer
 }
 
-func NewDataReceiver() (*DataReceiver,error) {
-	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost"})
+func NewDataReceiver() (*DataReceiver, error) {
+	p, err := NewKafkaProducer()
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
-		// Start another go routine to check if we have delivered the data
-		go func() {
-			for e := range p.Events() {
-				switch ev := e.(type) {
-				case *kafka.Message:
-					if ev.TopicPartition.Error != nil {
-						fmt.Printf("Delivery failed: %v\n", ev.TopicPartition)
-					} else {
-						fmt.Printf("Delivered message to %v\n", ev.TopicPartition)
-					}
-				}
-			}
-		}()
 
 	return &DataReceiver{
-		msgch: make(chan types.OBUData,128),
-		Prod: p,
-	},nil
+		msgch: make(chan types.OBUData, 128),
+		Prod:  p,
+	}, nil
 }
 
-func (dr *DataReceiver) DataProducer(data types.OBUData) error {
-	b, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
 
-	err = dr.Prod.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{
-			Topic:     &KafkaTopic,
-			Partition: kafka.PartitionAny,
-		},
-		Value: b,
-	}, nil)
-
-	return err
+func (dr *DataReceiver) ProduceData(data types.OBUData) error {
+	return dr.Prod.ProduceData(data)
 }
 
 
@@ -104,7 +79,7 @@ func (dr *DataReceiver) wsReceiverLoop()  {
 			
 		}
 		// fmt.Println("received message : ",data)
-		if err := dr.DataProducer(data); err!= nil{
+		if err := dr.ProduceData(data); err!= nil{
 			fmt.Println("kafka produce error :", err)
 		}
 		// fmt.Printf("received OBUdata from [%d] :: <lat %.2f,long %.2f> \n",data.OBUID,data.Latitiude,data.Longitude)
