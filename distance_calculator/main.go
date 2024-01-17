@@ -4,10 +4,15 @@ import (
 	"fmt"
 	"log"
 )
-const kafkaTopic = "obudata"
+const KafkaTopic = "obudata"
 
 func main()  {
-	kafkaConsumer,err := NewkafkaConsumer(kafkaTopic)
+	var (
+		svc CalculatorServicer
+		err error
+	)
+	svc = NewCalculatorService()
+	kafkaConsumer,err := NewkafkaConsumer(KafkaTopic,svc)
 	if err!= nil{
 		log.Fatal(err)
 	}
