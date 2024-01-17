@@ -18,11 +18,10 @@ go get github.com/confluentinc/confluent-kafka-go/v2/kafka
 ```
 
 ### kafka docker installation
-```bash
+```
 docker-compose up -d
-
+```
 # Logger
 
-```
+```bash
 go get github.com/sirupsen/logrus
-```
