@@ -31,3 +31,6 @@ docker-compose up -d
 
 ```bash
 go get github.com/sirupsen/logrus
+
+
+### Note : This project is currently in its development phase,as i had my exams, so need to pause it for a month.
