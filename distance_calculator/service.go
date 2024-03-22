@@ -16,9 +16,7 @@ type CalculatorService struct {
 }
 
 func NewCalculatorService() CalculatorServicer {
-	return &CalculatorService{
-		PrevPoint: []float64{},
-	}
+	return &CalculatorService{}
 
 }
 

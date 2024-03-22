@@ -15,4 +15,4 @@ agg:
 	@./bin/agg
 
 
-.PHONY: obu, receiver, calculator, agg
+.PHONY: obu receiver calculator agg

@@ -8,17 +8,17 @@ import (
 	"net/http"
 
 	"github.com/adarsh-jaiss/microservice-toll-calculator/types"
-	
 )
 
 func main() {
 	listenAddr := flag.String("listenaddr", ":3000", "server listen address of http transport server")
 	flag.Parse()
 
-	store := NewMemoryStore()
 	var (
-		svc = NewInvoiceAggregator(store)
+		store = NewMemoryStore()
+		svc   = NewInvoiceAggregator(store)
 	)
+	svc = NewLogMiddleware(svc)
 	makeHTTPTransport(*listenAddr, svc)
 
 }
@@ -33,13 +33,13 @@ func HandleAggregate(svc Aggregator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var Distance types.Distance
 		if err := json.NewDecoder(r.Body).Decode(&Distance); err != nil {
-			WriteJSON(w,http.StatusBadRequest, map[string]string{"error":err.Error()})
+			WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 			fmt.Fprintf(w, "Error decoding JSON: %v", err)
 			return
 		}
 
 		if err := svc.AggregateDistance(Distance); err != nil {
-			WriteJSON(w,http.StatusInternalServerError, map[string]string{"error":err.Error()})
+			WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 			return
 		}
 	}
