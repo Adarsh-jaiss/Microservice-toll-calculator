@@ -44,12 +44,16 @@ func (c *KafkaConsumer) Start() {
 func (c *KafkaConsumer) ReadMessageLoop() {
 	for c.IsRunning {
 		msg, err := c.consumer.ReadMessage(-1)
-		if err == nil {
-			fmt.Printf("Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
-		} else {
+		if err != nil {
+
 			logrus.Errorf("kafka consume error: %v (%v)\n", err, msg)
-			continue
 		}
+		// if err == nil {
+		// 	fmt.Printf("Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
+		// } else {
+		// 	logrus.Errorf("kafka consume error: %v (%v)\n", err, msg)
+		// 	continue
+		// }
 
 		var data types.OBUData
 		if err := json.Unmarshal(msg.Value, &data); err != nil {
@@ -57,12 +61,13 @@ func (c *KafkaConsumer) ReadMessageLoop() {
 			continue
 		}
 
-		distance,err := c.calcService.CalculateDistance(data)
+		distance, err := c.calcService.CalculateDistance(data)
 		if err != nil {
 			logrus.Errorf("Error in calculating distance: %v", err)
 			continue
 		}
-		fmt.Printf("distance calculated: %.2f\n ", distance)
+		_ = distance
+		// fmt.Printf("distance calculated: %.2f\n ", distance)
 
 	}
 }
