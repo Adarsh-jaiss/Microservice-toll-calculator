@@ -62,7 +62,7 @@ func (c *KafkaConsumer) ReadMessageLoop() {
 			logrus.Errorf("Error in calculating distance: %v", err)
 			continue
 		}
-		fmt.Println("distance calculated: %.2f ", distance)
+		fmt.Printf("distance calculated: %.2f\n ", distance)
 
 	}
 }
