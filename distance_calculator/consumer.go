@@ -1,75 +1,51 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"time"
-
-	"github.com/adarsh-jaiss/microservice-toll-calculator/types"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/sirupsen/logrus"
 )
 
-// This can also be called Kafka Transport
 type KafkaConsumer struct {
-	consumer    *kafka.Consumer
-	IsRunning   bool
-	CalcService CalculatorServicer
+	consumer  *kafka.Consumer
+	IsRunning bool
 }
 
-func NewkafkaConsumer(topic string, svc CalculatorServicer) (*KafkaConsumer, error) {
-
+func NewKafkaConsumer(topic string) (*KafkaConsumer, error) {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost:9092",
+		"bootstrap.servers": "localhost",
 		"group.id":          "myGroup",
 		"auto.offset.reset": "earliest",
 	})
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Kafka consumer: %s", err)
+		fmt.Println("error in creating consumer!")
+		return nil, err
 	}
 
-	err = c.SubscribeTopics([]string{topic}, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to subscribe to topic %s: %s", topic, err)
-	}
-
-	fmt.Printf("Kafka consumer subscribed to topic: %s\n", topic)
-
-	// c.Close()
+	c.SubscribeTopics([]string{topic}, nil)
 
 	return &KafkaConsumer{
-		consumer:    c,
-		CalcService: svc,
-		IsRunning:   true,
+		consumer: c,
 	}, nil
 }
 
 func (c *KafkaConsumer) Start() {
-	logrus.Info("Kafka transport started")
+	logrus.Info(" Kafka Transport started")
 	c.IsRunning = true
 	c.ReadMessageLoop()
 }
 
 func (c *KafkaConsumer) ReadMessageLoop() {
 	for c.IsRunning {
-		msg, err := c.consumer.ReadMessage(time.Minute)
-		if err != nil {
-			logrus.Errorf("kafka consume error :: %s", err)
-			// log.Fatal(err)
+		msg, err := c.consumer.ReadMessage(-1)
+		if err == nil {
+			fmt.Printf("Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
+		} else {
+			logrus.Errorf("kafka consume error: %v (%v)\n", err, msg)
 			continue
 		}
-		fmt.Println(msg)
-		var data types.OBUData
-		if err := json.Unmarshal(msg.Value, &data); err != nil {
-			logrus.Errorf("JSON serialization error: %s", err)
-			continue
-		}
-		distance, err := c.CalcService.CalculateDistance(data)
-		if err != nil {
-			logrus.Errorf("calculation error: %s", err)
-			continue
-		}
-		fmt.Printf("distance : %.2f", distance)
+		
 	}
 }
