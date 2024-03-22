@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/adarsh-jaiss/microservice-toll-calculator/types"
+	
 )
 
 func main() {
@@ -18,12 +19,12 @@ func main() {
 	var (
 		svc = NewInvoiceAggregator(store)
 	)
-	makeHTTPTransport(*listenAddr,svc)
+	makeHTTPTransport(*listenAddr, svc)
 
 }
 
 func makeHTTPTransport(listenAddr string, svc Aggregator) {
-	fmt.Printf("HTTP Transport running at port %s", listenAddr)
+	fmt.Printf("HTTP Transport running at port %s...\n", listenAddr)
 	http.HandleFunc("/aggregate", HandleAggregate(svc))
 	log.Fatal(http.ListenAndServe(listenAddr, nil))
 }
@@ -32,9 +33,20 @@ func HandleAggregate(svc Aggregator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var Distance types.Distance
 		if err := json.NewDecoder(r.Body).Decode(&Distance); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			WriteJSON(w,http.StatusBadRequest, map[string]string{"error":err.Error()})
 			fmt.Fprintf(w, "Error decoding JSON: %v", err)
 			return
 		}
+
+		if err := svc.AggregateDistance(Distance); err != nil {
+			WriteJSON(w,http.StatusInternalServerError, map[string]string{"error":err.Error()})
+			return
+		}
 	}
+}
+
+func WriteJSON(w http.ResponseWriter, httpStatus int, v any) error {
+	w.WriteHeader(httpStatus)
+	w.Header().Add("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(v)
 }
