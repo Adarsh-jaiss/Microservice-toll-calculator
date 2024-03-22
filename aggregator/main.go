@@ -5,14 +5,17 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"strconv"
 
 	"github.com/adarsh-jaiss/microservice-toll-calculator/types"
+	"google.golang.org/grpc"
 )
 
 func main() {
-	listenAddr := flag.String("listenaddr", ":3000", "server listen address of http transport server")
+	httpListenAddr := flag.String("httplistenaddr", ":3000", "server listen address of http transport server")
+	grpcListenAddr := flag.String("grpclistenaddr", ":8080", "server listen address of http transport server")
 	flag.Parse()
 
 	var (
@@ -20,7 +23,8 @@ func main() {
 		svc   = NewInvoiceAggregator(store)
 	)
 	svc = NewLogMiddleware(svc)
-	makeHTTPTransport(*listenAddr, svc)
+	go makeGRPCTransport(*grpcListenAddr,svc)
+	makeHTTPTransport(*httpListenAddr, svc)
 
 }
 
@@ -29,6 +33,21 @@ func makeHTTPTransport(listenAddr string, svc Aggregator) {
 	http.HandleFunc("/aggregate", HandleAggregate(svc))
 	http.HandleFunc("/invoice", HandleGetInvoice(svc))
 	log.Fatal(http.ListenAndServe(listenAddr, nil))
+}
+
+func makeGRPCTransport(listenAddr string, svc Aggregator) error {
+	fmt.Printf("gRPC Transport running at port %s...\n", listenAddr)
+	// Make the TCP Listener
+	listen, err := net.Listen("TCP", listenAddr)
+	if err != nil {
+		return err
+	}
+	defer listen.Close()
+	// Create a new gRPC native server with oprtions
+	server := grpc.NewServer([]grpc.ServerOption{}...)
+	// register our GRPC server implememtation to the gRPC package
+	types.RegisterAggregatorServer(server, NewGRPCAggregatorServer(svc))
+	return server.Serve(listen)
 }
 
 func HandleGetInvoice(svc Aggregator) http.HandlerFunc {
@@ -54,8 +73,7 @@ func HandleGetInvoice(svc Aggregator) http.HandlerFunc {
 			return
 		}
 
-		WriteJSON(w,http.StatusOK,invoice)
-
+		WriteJSON(w, http.StatusOK, invoice)
 
 		// distance, err := svc.DistanceSum(obuId)
 		// if err != nil {
