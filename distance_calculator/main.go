@@ -8,7 +8,7 @@ import (
 
 const (
 	topic              = "obuData"
-	aggregatorEndpoint = "http://localhost:3000/aggregate"
+	aggregatorEndpoint = "http://localhost:3000"
 )
 
 // Transport --> JSON,GRPC,Kafka --> Attach business logic to this transport
