@@ -5,19 +5,21 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/adarsh-jaiss/microservice-toll-calculator/aggregator/client"
+	"github.com/adarsh-jaiss/microservice-toll-calculator/types"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"google.golang.org/grpc"
 	"log"
 	"net"
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/adarsh-jaiss/microservice-toll-calculator/aggregator/client"
-	"github.com/adarsh-jaiss/microservice-toll-calculator/types"
-	"google.golang.org/grpc"
 )
 
 func main() {
 	httpListenAddr := flag.String("httplistenaddr", ":3000", "server listen address of http transport server")
+	// httpListenAddr := flag.String("httplistenaddr", "127.0.0.1:3000", "server listen address of http transport server")
+	// httpListenAddr := flag.String("httplistenaddr", "[::1]:3000", "server listen address of http transport server")
 	grpcListenAddr := flag.String("grpclistenaddr", ":8080", "server listen address of http transport server")
 	flag.Parse()
 
@@ -25,22 +27,23 @@ func main() {
 		store = NewMemoryStore()
 		svc   = NewInvoiceAggregator(store)
 	)
+	svc = NewMetricsMiddleware(svc)
 	svc = NewLogMiddleware(svc)
 
-	go func ()  {
-		log.Fatal(makeGRPCTransport(*grpcListenAddr,svc))		
-	}() 
+	go func() {
+		log.Fatal(makeGRPCTransport(*grpcListenAddr, svc))
+	}()
 
 	time.Sleep(time.Second * 2)
-	c,err := client.NewGRPCClient(*grpcListenAddr)
-	if err != nil {	
+	c, err := client.NewGRPCClient(*grpcListenAddr)
+	if err != nil {
 		log.Fatal(err)
-	
+
 	}
-	if err := c.Aggregate(context.Background(),&types.AggregateRequest{
+	if err := c.Aggregate(context.Background(), &types.AggregateRequest{
 		ObuID: 1098,
 		Value: 6472.23,
-		Unix: time.Now().UnixNano(),
+		Unix:  time.Now().UnixNano(),
 	}); err != nil {
 		log.Fatal(err)
 	}
@@ -48,14 +51,19 @@ func main() {
 	// starting my HTTP Server
 	log.Fatal(makeHTTPTransport(*httpListenAddr, svc))
 
-	
-
 }
 
 func makeHTTPTransport(listenAddr string, svc Aggregator) error {
+	// var (
+	// 	aggMetricHandler = ewHTTPMetricsHandler("aggregate")
+	// 	invMetricHandler = ewHTTPMetricsHandler("invoice")
+	// 	aggregateHandler = makeHTTPHandlerFunc(aggMetricHandler.instrument(handleAggregate(svc)))
+	// 	invoiceHandler   = makeHTTPHandlerFunc(invMetricHandler.instrument(handleGetInvoice(svc)))
+	// )
 	fmt.Printf("HTTP Transport running at port %s...\n", listenAddr)
 	http.HandleFunc("/aggregate", HandleAggregate(svc))
 	http.HandleFunc("/invoice", HandleGetInvoice(svc))
+	http.Handle("/metrics", promhttp.Handler())
 	return http.ListenAndServe(listenAddr, nil)
 }
 

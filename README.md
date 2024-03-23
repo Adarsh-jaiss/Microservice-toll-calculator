@@ -53,6 +53,35 @@ sudo apt install -y protobuf-compiler
 brew install protobuff
 ```
 
+### Prometheus
+
+#### Installing prometheus Go client : `go get github.com/prometheus/client_golang/prometheus`
+
+#### docker container : 
+```
+docker run -d \
+  --name prometheus \
+  -p 127.0.0.1:9090:9090 \
+  -v /path/to/your/prometheus.yml:/etc/prometheus/prometheus.yml \
+  prom/prometheus
+
+```
+
+```
+docker run -d \
+  --name prometheus \
+  -p 127.0.0.1:9090:9090 \
+  -v /home/adarsh/myfiles/backend/Final\ projects/Microservice-toll-calculator/.config/prometheus.yml:/etc/prometheus/prometheus.yml \
+  prom/prometheus
+
+```
+
+`docker run --name prometheus -d -p 127.0.0.1:9090:9090 prom/prometheus`
+
+- to check if its running or not, you can access the prometheus locally on : `http://localhost:9090`
+-   Use this command to run
+
+
 
 
 ### Note : This project is currently in its development phase,as i had my exams, so need to pause it for a month.
